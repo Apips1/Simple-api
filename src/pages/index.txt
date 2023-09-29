@@ -1,0 +1,191 @@
+<script setup lang="ts">
+import { useMutation } from "@tanstack/vue-query";
+import { useRouter } from "vue-router";
+import axios from "axios";
+import {  reactive, ref } from "vue";
+import Cookies from "js-cookie";
+
+  // Method to set data in cookies which will expire in 7 days
+
+const router = useRouter();
+
+const formData = ref({
+  email: "",
+  password: "",
+});
+// const getTokenFromCookie = () =>{
+//   return Cookies.get('token');
+// }
+const state = reactive({
+  isLoading:false,
+})
+const handleSubmit = async () => {
+  try {
+    state.isLoading = true; // Menampilkan pesan loading
+    const response = await axios.post(`https://reqres.in/api/login`, {
+      email: formData.value.email,
+      password: formData.value.password,
+    });
+     // Simpan token dalam cookie dengan nama 'token' yang akan kedaluwarsa dalam 1 menit
+    Cookies.set('token', response.data.token);
+     // Alihkan ke halaman "/users" setelah berhasil login
+    router.push("/users")
+    // console.log("login succes:", response.data);
+    
+  } catch {
+    console.error("gagal");
+  } finally{
+    // Sembunyikan pesan loading setelah sejumlah waktu tertentu 
+    setTimeout(() => {
+    state.isLoading = false;
+    }, 2000);;
+  }
+};
+
+
+
+// const { mutate: onSubmit, isLoading } = useMutation({
+//   mutationFn: handleSubmit,
+// });
+const { mutate: onSubmit, isLoading } = useMutation({
+  mutationFn: handleSubmit,
+  onMutate: () => {
+    state.isLoading = true; // Menampilkan pesan loading saat permintaan dimulai
+  },
+  onSuccess: (data) => {
+    console.log(data);
+  //   // Setelah berhasil login, perbarui nilai tokenFromCookie
+  //   tokenFromCookie = getTokenFromCookie();
+  // console.log("Token dari cookie:", tokenFromCookie);
+  },
+});
+// let tokenFromCookie = getTokenFromCookie();
+// Setelah berhasil login, perbarui nilai tokenFromCookie
+
+
+</script>
+
+<template>
+  <div :class="$style.container">
+    <n-space justify="center" align="center" vertical>
+      <n-card :class="$style.logincard">
+        <n-space justify="center">
+          <n-text> Dashboard Tele Sales eMET </n-text>
+        </n-space>
+        <n-h4
+          >Silahkan masukkan email & kata sandi untuk masuk ke akun Anda
+        </n-h4>
+        <n-form :model="formData" ref="formRef">
+          <n-form-item path="email" label="Email">
+            <n-input
+              v-model:value="formData.email"
+              name="email"
+              placeholder="Input Email"
+            />
+          </n-form-item>
+          <n-form-item path="password" label="Password">
+            <n-input
+              type="password"
+              name="password"
+              show-password-on="click"
+              placeholder="Input Password"
+              v-model:value="formData.password"
+            />
+          </n-form-item>
+          <template v-if="isLoading" class="$style.loading">Loading....</template>
+          <n-row :gutter="[0, 30]">
+            <n-col :span="24">
+              <div style="display: flex; justify-content: center">
+                <n-button @click="onSubmit" type="success"
+                  >Login</n-button
+                >
+              </div>
+            </n-col>
+          </n-row>
+        </n-form>
+      </n-card>
+    </n-space>
+  </div>
+</template>
+<style scoped module>
+.container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+.logincard {
+  width: 450px;
+  background-color: theme("colors.white");
+  border-radius: theme("borderRadius.lg");
+  padding: theme("spacing.6");
+  box-shadow: theme("boxShadow.xl");
+}
+.loading {
+  /* Gaya untuk pesan loading */
+  text-align: center;
+  margin-top: 10px;
+  font-size: 16px;
+  color: #ff0000; /* Atur warna teks yang sesuai */
+}
+</style>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+const formRef = ref<FormInst | null>(null);
+const router = useRouter();
+const message = useMessage();
+
+const formData = ref({
+  email: "",
+  password: "",
+});
+
+const handleSubmit = async () => {
+  try {
+    const response = await axios.post(`https://reqres.in/api/login`, {
+      email: formData.value.email,
+      password: formData.value.password,
+    });
+    return response;
+
+    
+  } catch (error) {
+    console.error(error);
+    message.error("Login failed");
+  }
+};
+const { mutate, isLoading, isError, error } = useMutation({
+  mutationFn: handleSubmit,
+  onMutate: () => {
+    // Perform actions before the mutation here
+  },
+  onSuccess: (data) => {
+    console.log(data);
+    // Handle success as needed
+    Cookies.set("token", data?.data.token);
+    router.push("/users");
+  },
+});
+
+
+const onSubmit = () => {
+  formRef.value?.validate((errors) => {
+    if (errors!.length > 0) return;
+    mutate();
+  });
+
+};
